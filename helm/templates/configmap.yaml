@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  POSTGRES_HOST: "postgresql"
+  POSTGRES_PORT: "5432"
+  USER_SERVICE_URL: "http://{{ .Values.userService.name }}"
+  SALLE_SERVICE_URL: "http://{{ .Values.salleService.name }}"
+  RESERVATION_SERVICE_URL: "http://{{ .Values.reservationService.name }}
+  NOTIFICATION_LEVEL: {{ .Values.notifications.level | quote }}
+  SONARQUBE_URL: "http://sonarqube:9000"
+  SONARQUBE_WEBHOOK_URL: {{ .Values.sonarqube.webhook.url | quote }}
+  {{- if .Values.notifications.slack.enabled }}
+  SLACK_WEBHOOK_URL: {{ .Values.notifications.slack.webhook_url | quote }}
+  {{- end }}
+  {{- if .Values.notifications.teams.enabled }}
+  TEAMS_WEBHOOK_URL: {{ .Values.notifications.teams.webhook_url | quote }}
+  {{- end }}

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profile>
+  <name>Python Custom Rules</name>
+  <language>py</language>
+  <rules>
+    <!-- Code Style -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1451</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Code Smells -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1066</key>
+      <priority>MAJOR</priority>
+    </rule>
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S107</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>7</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Security -->
+    <rule>
+      <repositoryKey>security-python</repositoryKey>
+      <key>S5131</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    <rule>
+      <repositoryKey>security-python</repositoryKey>
+      <key>S5144</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Documentation -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1720</key>
+      <priority>MINOR</priority>
+    </rule>
+  </rules>
+</profile>

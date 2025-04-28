@@ -1,0 +1,139 @@
+{{- if .Values.sonarqube.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube
+  labels:
+    app: sonarqube
+spec:
+  replicas: {{ .Values.sonarqube.replicas }}
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      containers:
+      - name: sonarqube
+        image: {{ .Values.sonarqube.image }}:{{ .Values.sonarqube.tag }}
+        ports:
+        - containerPort: 9000
+        env:
+        - name: SONAR_JDBC_URL
+          value: jdbc:postgresql://{{ .Values.sonarqube.database.host }}:5432/{{ .Values.sonarqube.database.name }}
+        - name: SONAR_JDBC_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: sonarqube-secrets
+              key: database-user
+        - name: SONAR_JDBC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sonarqube-secrets
+              key: database-password
+        - name: SONAR_SECURITY_REALM
+          value: GITHUB
+        resources:
+          requests:
+            memory: {{ .Values.sonarqube.resources.requests.memory }}
+            cpu: {{ .Values.sonarqube.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.sonarqube.resources.limits.memory }}
+            cpu: {{ .Values.sonarqube.resources.limits.cpu }}
+        volumeMounts:
+        - name: sonarqube-data
+          mountPath: /opt/sonarqube/data
+        - name: sonarqube-extensions
+          mountPath: /opt/sonarqube/extensions
+        - name: sonarqube-logs
+          mountPath: /opt/sonarqube/logs
+      volumes:
+      - name: sonarqube-data
+        persistentVolumeClaim:
+          claimName: sonarqube-data
+      - name: sonarqube-extensions
+        persistentVolumeClaim:
+          claimName: sonarqube-extensions
+      - name: sonarqube-logs
+        persistentVolumeClaim:
+          claimName: sonarqube-logs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 9000
+  selector:
+    app: sonarqube
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sonarqube.persistence.data.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-extensions
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sonarqube.persistence.extensions.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-logs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sonarqube.persistence.logs.size }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sonarqube-secrets
+type: Opaque
+data:
+  database-user: {{ .Values.sonarqube.database.user | b64enc }}
+  database-password: {{ .Values.sonarqube.database.password | b64enc }}
+{{- if .Values.sonarqube.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarqube
+  annotations:
+    {{- with .Values.sonarqube.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+  - host: {{ .Values.sonarqube.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sonarqube
+            port:
+              number: 80
+{{- end }}
+{{- end }}

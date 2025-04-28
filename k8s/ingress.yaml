@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microservices-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 80
+      - path: /salles
+        pathType: Prefix
+        backend:
+          service:
+            name: salle-service
+            port:
+              number: 80
+      - path: /reservations
+        pathType: Prefix
+        backend:
+          service:
+            name: reservation-service
+            port:
+              number: 80

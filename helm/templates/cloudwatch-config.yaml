@@ -1,0 +1,97 @@
+{{- if .Values.aws.cloudwatch.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudwatch-agent-config
+data:
+  cloudwatch-agent.json: |
+    {
+      "logs": {
+        "logs_collected": {
+          "kubernetes": {
+            "cluster_name": "{{ .Release.Name }}",
+            "container_logs": {
+              "auto_creation": true
+            }
+          }
+        },
+        "log_stream_name": "{container_name}"
+      }
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudwatch-secret
+type: Opaque
+data:
+  access_key: {{ .Values.aws.cloudwatch.accessKeyId | b64enc }}
+  secret_key: {{ .Values.aws.cloudwatch.secretAccessKey | b64enc }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cloudwatch-agent
+spec:
+  selector:
+    matchLabels:
+      app: cloudwatch-agent
+  template:
+    metadata:
+      labels:
+        app: cloudwatch-agent
+    spec:
+      containers:
+      - name: cloudwatch-agent
+        image: amazon/cloudwatch-agent:latest
+        env:
+        - name: AWS_REGION
+          value: {{ .Values.aws.cloudwatch.region }}
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloudwatch-secret
+              key: access_key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudwatch-secret
+              key: secret_key
+        - name: CW_CONFIG_CONTENT
+          valueFrom:
+            configMapKeyRef:
+              name: cloudwatch-agent-config
+              key: cloudwatch-agent.json
+        volumeMounts:
+        - name: rootfs
+          mountPath: /rootfs
+          readOnly: true
+        - name: dockersock
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        - name: varlibdocker
+          mountPath: /var/lib/docker
+          readOnly: true
+        - name: sys
+          mountPath: /sys
+          readOnly: true
+        - name: devdisk
+          mountPath: /dev/disk
+          readOnly: true
+      volumes:
+      - name: rootfs
+        hostPath:
+          path: /
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock
+      - name: varlibdocker
+        hostPath:
+          path: /var/lib/docker
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: devdisk
+        hostPath:
+          path: /dev/disk
+{{- end }}

@@ -1,0 +1,88 @@
+{{- if .Values.monitoring.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+data:
+  microservices-overview.json: |
+    {
+      "dashboard": {
+        "title": "Microservices Overview",
+        "panels": [
+          {
+            "title": "Service Response Times",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])",
+                "legendFormat": "{{service}}"
+              }
+            ]
+          },
+          {
+            "title": "Service Error Rates",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{status=~\"5.*\"}[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service)",
+                "legendFormat": "{{service}}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  
+  kafka-metrics.json: |
+    {
+      "dashboard": {
+        "title": "Kafka Metrics",
+        "panels": [
+          {
+            "title": "Messages per Second",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "rate(kafka_server_brokertopicmetrics_messagesin_total[5m])",
+                "legendFormat": "{{topic}}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+  system-metrics.json: |
+    {
+      "dashboard": {
+        "title": "System Metrics",
+        "panels": [
+          {
+            "title": "CPU Usage",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (container)",
+                "legendFormat": "{{container}}"
+              }
+            ]
+          },
+          {
+            "title": "Memory Usage",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "sum(container_memory_usage_bytes{container!=\"\"}) by (container)",
+                "legendFormat": "{{container}}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+{{- end }}

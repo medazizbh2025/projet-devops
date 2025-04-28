@@ -1,0 +1,75 @@
+{{- define "common.deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  labels:
+    app: {{ .name }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}
+    spec:
+      containers:
+      - name: {{ .name }}
+        image: {{ .image }}:{{ $.Values.imageTag }}
+        ports:
+        - containerPort: {{ .port }}
+        env:
+        - name: NOTIFICATION_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-config
+              key: NOTIFICATION_LEVEL
+        - name: SONARQUBE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-config
+              key: SONARQUBE_URL
+        - name: SONARQUBE_WEBHOOK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-config
+              key: SONARQUBE_WEBHOOK_URL
+        {{- if .Values.notifications.slack.enabled }}
+        - name: SLACK_WEBHOOK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-config
+              key: SLACK_WEBHOOK_URL
+        {{- end }}
+        {{- if .Values.notifications.teams.enabled }}
+        - name: TEAMS_WEBHOOK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-config
+              key: TEAMS_WEBHOOK_URL
+        {{- end }}
+        - name: SONARQUBE_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: sonarqube-webhook-secret
+        resources:
+          {{- toYaml .resources | nindent 12 }}
+{{- end -}}
+
+---
+{{- with .Values.userService }}
+{{- include "common.deployment" . | nindent 0 }}
+{{- end }}
+
+---
+{{- with .Values.salleService }}
+{{- include "common.deployment" . | nindent 0 }}
+{{- end }}
+
+---
+{{- with .Values.reservationService }}
+{{- include "common.deployment" . | nindent 0 }}
+{{- end }}

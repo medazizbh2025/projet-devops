@@ -1,0 +1,5 @@
+apiVersion: v2
+name: salle-reservation
+description: Helm chart for Salle Reservation System
+version: 0.1.0
+appVersion: "1.0.0"

@@ -1,0 +1,29 @@
+{{- define "common.service" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  selector:
+    app: {{ .name }}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: {{ .port }}
+  type: ClusterIP
+{{- end -}}
+
+---
+{{- with .Values.userService }}
+{{- include "common.service" . | nindent 0 }}
+{{- end }}
+
+---
+{{- with .Values.salleService }}
+{{- include "common.service" . | nindent 0 }}
+{{- end }}
+
+---
+{{- with .Values.reservationService }}
+{{- include "common.service" . | nindent 0 }}
+{{- end }}

@@ -1,0 +1,55 @@
+{
+  "name": "Salle Reservation Quality Gate",
+  "conditions": [
+    {
+      "metric": "new_coverage",
+      "op": "LT",
+      "error": "80"
+    },
+    {
+      "metric": "new_duplicated_lines_density",
+      "op": "GT",
+      "error": "3"
+    },
+    {
+      "metric": "new_security_rating",
+      "op": "GT",
+      "error": "1"
+    },
+    {
+      "metric": "new_reliability_rating",
+      "op": "GT",
+      "error": "1"
+    },
+    {
+      "metric": "new_maintainability_rating",
+      "op": "GT",
+      "error": "1"
+    },
+    {
+      "metric": "new_security_hotspots_reviewed",
+      "op": "LT",
+      "error": "100"
+    },
+    {
+      "metric": "new_bugs",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_code_smells",
+      "op": "GT",
+      "error": "5"
+    },
+    {
+      "metric": "new_blocker_violations",
+      "op": "GT",
+      "error": "0"
+    },
+    {
+      "metric": "new_critical_violations",
+      "op": "GT",
+      "error": "0"
+    }
+  ]
+}

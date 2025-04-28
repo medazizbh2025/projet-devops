@@ -1,0 +1,219 @@
+imageTag: latest
+
+userService:
+  name: user-service
+  image: user-service
+  port: 5000
+  replicas: 2
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+
+salleService:
+  name: salle-service
+  image: salle-service
+  port: 5001
+  replicas: 2
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+
+reservationService:
+  name: reservation-service
+  image: reservation-service
+  port: 5002
+  replicas: 2
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+
+kafka:
+  enabled: true
+  replicaCount: 1
+
+postgresql:
+  enabled: true
+  persistence:
+    size: 1Gi
+
+monitoring:
+  grafana:
+    enabled: true
+    adminPassword: admin
+    persistence:
+      enabled: true
+      size: 10Gi
+    datasources:
+      - name: Loki
+        type: loki
+        url: http://loki:3100
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-server
+    dashboards:
+      enabled: true
+      sonarqube:
+        enabled: true
+        updateInterval: 5m
+    alerts:
+      enabled: true
+      receivers:
+        slack:
+          enabled: true
+          channel: '#devops-alerts'
+          apiUrl: "${SLACK_WEBHOOK_URL}"
+        teams:
+          enabled: true
+          webhookUrl: "${TEAMS_WEBHOOK_URL}"
+
+  loki:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 10Gi
+
+  prometheus:
+    enabled: true
+    alertmanager:
+      enabled: true
+    server:
+      persistentVolume:
+        size: 10Gi
+    scrapeInterval: 30s
+
+aws:
+  cloudwatch:
+    enabled: true
+    region: eu-west-1
+    logGroupName: salle-reservation-logs
+    accessKeyId: ""
+    secretAccessKey: ""
+
+jaeger:
+  enabled: true
+  collector:
+    service:
+      otlp:
+        grpc:
+          enabled: true
+  query:
+    service:
+      type: ClusterIP
+  agent:
+    service:
+      type: ClusterIP
+  storage:
+    type: elasticsearch
+    options:
+      es:
+        server-urls: http://elasticsearch:9200
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - host: jaeger.local
+        paths:
+          - path: /
+            pathType: Prefix
+
+sonarqube:
+  enabled: true
+  replicas: 1
+  image: "sonarqube"
+  tag: "9.9-community"
+  
+  database:
+    host: "postgresql"
+    name: "sonar"
+    user: "sonar"
+    password: "sonar"
+  
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+  
+  persistence:
+    data:
+      size: "10Gi"
+    extensions:
+      size: "2Gi"
+    logs:
+      size: "2Gi"
+  
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    host: "sonar.example.com"
+  
+  quality:
+    defaults:
+      coverage:
+        minimum: 80
+      duplication:
+        maximum: 3
+      maintainability:
+        rating: "A"
+      reliability:
+        rating: "A"
+      security:
+        rating: "A"
+
+  webhook:
+    secret: ""
+    url: "http://reservation-service/webhooks/sonarqube"
+  metrics:
+    exporter:
+      enabled: true
+      interval: 300
+  webhooks:
+    enabled: true
+    secret: "${SONARQUBE_WEBHOOK_SECRET}"
+  qualityGates:
+    failOnError: true
+    conditions:
+      - metric: coverage
+        threshold: 70
+        operator: LT
+      - metric: bugs
+        threshold: 0
+        operator: GT
+        severity: CRITICAL
+      - metric: vulnerabilities
+        threshold: 0
+        operator: GT
+        severity: HIGH
+      - metric: code_smells
+        threshold: 50
+        operator: GT
+  auth:
+    adminPassword: "${SONAR_ADMIN_PASSWORD}"
+    token: "${SONAR_TOKEN}"
+
+notifications:
+  enabled: true
+  level: ERROR  # ERROR, WARNING, or ALL
+  slack:
+    enabled: true
+    webhook_url: ""
+  teams:
+    enabled: true
+    webhook_url: ""

@@ -1,0 +1,120 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint pytest pytest-cov
+        for service in user-service salle-service reservation-service; do
+          cd $service
+          pip install -r requirements.txt
+          cd ..
+        done
+    
+    - name: Run tests and coverage
+      run: |
+        for service in user-service salle-service reservation-service; do
+          cd $service
+          python -m pytest tests/ --cov=app --cov-report=xml
+          mv coverage.xml ../$service-coverage.xml
+          pylint app --output-format=text > ../pylint-$service.txt || true
+          cd ..
+        done
+
+  sonarqube:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Download coverage reports
+      uses: actions/download-artifact@v2
+      with:
+        name: coverage-reports
+        
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+    - name: Check Quality Gate
+      uses: sonarsource/sonarqube-quality-gate-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        scanMetadataReportFile: .scannerwork/report-task.txt
+
+  build:
+    needs: sonarqube
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
+    
+    - name: Build and push images
+      run: |
+        for service in user-service salle-service reservation-service; do
+          docker build -t $DOCKER_REGISTRY/$DOCKER_USERNAME/$service:$GITHUB_SHA $service
+          docker push $DOCKER_REGISTRY/$DOCKER_USERNAME/$service:$GITHUB_SHA
+          docker tag $DOCKER_REGISTRY/$DOCKER_USERNAME/$service:$GITHUB_SHA $DOCKER_REGISTRY/$DOCKER_USERNAME/$service:latest
+          docker push $DOCKER_REGISTRY/$DOCKER_USERNAME/$service:latest
+        done
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: '3.7.0'
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v1
+    
+    - name: Write kubeconfig
+      run: echo "$KUBE_CONFIG" > ~/.kube/config
+    
+    - name: Deploy with Helm
+      run: |
+        helm upgrade --install salle-reservation ./helm \
+          --set imageTag=$GITHUB_SHA \
+          --set userService.image=$DOCKER_REGISTRY/$DOCKER_USERNAME/user-service \
+          --set salleService.image=$DOCKER_REGISTRY/$DOCKER_USERNAME/salle-service \
+          --set reservationService.image=$DOCKER_REGISTRY/$DOCKER_USERNAME/reservation-service
