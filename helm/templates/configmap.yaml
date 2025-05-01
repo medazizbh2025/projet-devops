@@ -8,7 +8,7 @@ data:
   POSTGRES_PORT: "5432"
   USER_SERVICE_URL: "http://{{ .Values.userService.name }}"
   SALLE_SERVICE_URL: "http://{{ .Values.salleService.name }}"
-  RESERVATION_SERVICE_URL: "http://{{ .Values.reservationService.name }}
+  RESERVATION_SERVICE_URL: "http://{{ .Values.reservationService.name }}"
   NOTIFICATION_LEVEL: {{ .Values.notifications.level | quote }}
   SONARQUBE_URL: "http://sonarqube:9000"
   SONARQUBE_WEBHOOK_URL: {{ .Values.sonarqube.webhook.url | quote }}

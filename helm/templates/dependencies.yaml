@@ -3,6 +3,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kafka
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kafka
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.kafka.replicaCount }}
   selector:
@@ -28,6 +34,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kafka
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kafka
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: kafka
@@ -36,12 +48,18 @@ spec:
     targetPort: 9092
 {{- end }}
 
----
 {{- if .Values.postgresql.enabled }}
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgresql
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
   serviceName: postgresql
   replicas: 1
@@ -80,6 +98,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgresql
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: postgresql

@@ -1,85 +1,48 @@
+{{- if and .Values.monitoring.grafana.enabled .Values.sonarqube.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-grafana-sonarqube-dashboards
-  labels:
-    grafana_dashboard: "true"
+  name: grafana-dashboards-sonarqube
 data:
   sonarqube-metrics.json: |
     {
-      "annotations": {
-        "list": []
-      },
-      "editable": true,
-      "panels": [
-        {
-          "title": "Code Coverage",
-          "type": "gauge",
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "expr": "sonarqube_coverage{project=\"salle-reservation\"}",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "thresholds": {
-                "steps": [
-                  { "value": null, "color": "red" },
-                  { "value": 50, "color": "yellow" },
-                  { "value": 70, "color": "green" }
-                ]
-              },
-              "unit": "percent"
-            }
+      "dashboard": {
+        "title": "SonarQube Metrics",
+        "panels": [
+          {
+            "title": "Code Issues by Severity",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "sonarqube_issues_total",
+                "legendFormat": "{{ `{{severity}}` }}"
+              }
+            ]
+          },
+          {
+            "title": "Code Coverage",
+            "type": "gauge",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "sonarqube_coverage_percentage",
+                "legendFormat": "{{ `{{project}}` }}"
+              }
+            ]
+          },
+          {
+            "title": "Technical Debt",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "targets": [
+              {
+                "expr": "sonarqube_technical_debt_minutes",
+                "legendFormat": "{{ `{{project}}` }}"
+              }
+            ]
           }
-        },
-        {
-          "title": "Quality Gate Status",
-          "type": "stat",
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "expr": "sonarqube_quality_gate_status",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "mappings": [
-                {
-                  "type": "value",
-                  "options": {
-                    "0": { "text": "Failed", "color": "red" },
-                    "1": { "text": "Passed", "color": "green" }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        {
-          "title": "Bugs and Vulnerabilities",
-          "type": "timeseries",
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "expr": "sum(sonarqube_bugs) by (severity)",
-              "legendFormat": "Bugs - {{severity}}"
-            },
-            {
-              "expr": "sum(sonarqube_vulnerabilities) by (severity)",
-              "legendFormat": "Vulnerabilities - {{severity}}"
-            }
-          ]
-        }
-      ],
-      "refresh": "5m",
-      "time": {
-        "from": "now-6h",
-        "to": "now"
-      },
-      "title": "SonarQube Metrics",
-      "version": 1
+        ]
+      }
     }
+{{- end }}

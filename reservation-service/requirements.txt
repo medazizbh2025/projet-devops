@@ -1,15 +1,20 @@
 flask==2.0.1
+werkzeug==2.0.3
 flask-sqlalchemy==2.5.1
+sqlalchemy==1.4.46
 flask-migrate==3.1.0
 psycopg2-binary==2.9.3
 kafka-python==2.0.2
 python-json-logger==2.0.7
 prometheus-client==0.14.1
+prometheus_flask_exporter==0.22.3
 watchtower==3.0.1
 opentelemetry-api==1.12.0
 opentelemetry-sdk==1.12.0
 opentelemetry-instrumentation-flask==0.33b0
 opentelemetry-exporter-jaeger==1.12.0
+opentelemetry-exporter-otlp==1.12.0
+opentelemetry-exporter-otlp-proto-grpc==1.12.0
 requests==2.28.1
 pytest==7.3.1
 pytest-cov==4.0.0
@@ -17,3 +22,4 @@ responses==0.23.1
 python-dotenv==0.19.2
 flask-jwt-extended==4.4.4
 pylint==2.17.0
+pandas==1.5.3

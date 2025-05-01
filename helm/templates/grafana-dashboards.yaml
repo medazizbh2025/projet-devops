@@ -16,7 +16,7 @@ data:
             "targets": [
               {
                 "expr": "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])",
-                "legendFormat": "{{service}}"
+                "legendFormat": "{{ `{{service}}` }}"
               }
             ]
           },
@@ -27,7 +27,7 @@ data:
             "targets": [
               {
                 "expr": "sum(rate(http_requests_total{status=~\"5.*\"}[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service)",
-                "legendFormat": "{{service}}"
+                "legendFormat": "{{ `{{service}}` }}"
               }
             ]
           }
@@ -47,7 +47,7 @@ data:
             "targets": [
               {
                 "expr": "rate(kafka_server_brokertopicmetrics_messagesin_total[5m])",
-                "legendFormat": "{{topic}}"
+                "legendFormat": "{{ `{{topic}}` }}"
               }
             ]
           }
@@ -67,7 +67,7 @@ data:
             "targets": [
               {
                 "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (container)",
-                "legendFormat": "{{container}}"
+                "legendFormat": "{{ `{{container}}` }}"
               }
             ]
           },
@@ -78,7 +78,7 @@ data:
             "targets": [
               {
                 "expr": "sum(container_memory_usage_bytes{container!=\"\"}) by (container)",
-                "legendFormat": "{{container}}"
+                "legendFormat": "{{ `{{container}}` }}"
               }
             ]
           }

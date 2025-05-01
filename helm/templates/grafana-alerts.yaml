@@ -2,97 +2,36 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-grafana-alerts
+  name: grafana-alerts
 data:
-  high-error-rate.yaml: |
+  alerts.yaml: |
     groups:
-      - name: HighErrorRate
+      - name: ServiceAlerts
         rules:
-        - alert: HighErrorRate
-          expr: sum(rate(http_requests_total{status=~"5.*"}[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service) > 0.05
-          for: 5m
-          labels:
-            severity: critical
-          annotations:
-            summary: High error rate detected
-            description: Service {{ $labels.service }} has error rate above 5%
+          - alert: HighErrorRate
+            expr: sum(rate(http_requests_total{status=~"5.*"}[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service) > 0.1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High error rate detected
+              description: "{{ `Service {{ $labels.service }} has high error rate (>10%)` }}"
 
-  service-latency.yaml: |
-    groups:
-      - name: ServiceLatency
-        rules:
-        - alert: HighLatency
-          expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 1
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: High latency detected
-            description: Service {{ $labels.service }} has response time above 1s
+          - alert: HighLatency
+            expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High latency detected
+              description: "{{ `Service {{ $labels.service }} is experiencing high latency (>1s)` }}"
 
-  system-resources.yaml: |
-    groups:
-      - name: SystemResources
-        rules:
-        - alert: HighCPUUsage
-          expr: sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (container) > 0.8
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: High CPU usage detected
-            description: Container {{ $labels.container }} is using more than 80% CPU
-
-        - alert: HighMemoryUsage
-          expr: sum(container_memory_usage_bytes{container!=""}) by (container) / sum(container_memory_limit_bytes{container!=""}) by (container) > 0.85
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: High memory usage detected
-            description: Container {{ $labels.container }} is using more than 85% of its memory limit
-
-  kafka-alerts.yaml: |
-    groups:
-      - name: KafkaAlerts
-        rules:
-        - alert: KafkaLag
-          expr: kafka_consumergroup_lag > 1000
-          for: 10m
-          labels:
-            severity: warning
-          annotations:
-            summary: High Kafka consumer lag
-            description: Consumer group {{ $labels.group }} has lag of {{ $value }} messages
-
-  sonarqube-alerts.yaml: |
-    groups:
-      - name: SonarQubeAlerts
-        rules:
-        - alert: LowCodeCoverage
-          expr: sonarqube_coverage{project="salle-reservation"} < 70
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: Code coverage is below threshold
-            description: Code coverage for project {{ $labels.project }} is at {{ $value }}%
-
-        - alert: QualityGateFailed
-          expr: sonarqube_quality_gate_status == 0
-          for: 5m
-          labels:
-            severity: critical
-          annotations:
-            summary: Quality Gate failure detected
-            description: Quality Gate has failed for project {{ $labels.project }}
-
-        - alert: HighSeverityIssues
-          expr: sum(sonarqube_bugs{severity="CRITICAL"}) + sum(sonarqube_vulnerabilities{severity="CRITICAL"}) > 5
-          for: 5m
-          labels:
-            severity: critical
-          annotations:
-            summary: High number of critical issues detected
-            description: There are {{ $value }} critical issues in the codebase
+          - alert: ServiceDown
+            expr: up == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Service is down
+              description: "{{ `Service {{ $labels.service }} is down` }}"
 {{- end }}

@@ -1,128 +1,73 @@
-# Système de Réservation de Salles
+# Projet DevOps - Système de Réservation de Salles
 
 ## Architecture
 
-Le système est composé de 3 microservices:
-- **user-service** : Gestion des utilisateurs et authentification (OAuth + JWT)
-- **salle-service** : Gestion des salles
-- **reservation-service** : Gestion des réservations
+Le projet est composé de trois microservices :
+- User Service (Gestion des utilisateurs)
+- Salle Service (Gestion des salles)
+- Reservation Service (Gestion des réservations)
 
 ## Prérequis
 
-- Docker et Docker Compose
+- Docker
 - Kubernetes (minikube ou cluster)
-- Helm
-- Python 3.9+
-- SonarQube
+- kubectl
+- helm (optionnel)
 
-## Configuration Locale
+## Configuration
 
-1. Cloner le repository:
+1. Copier le fichier `k8s-secrets.env.example` vers `k8s-secrets.env` et remplir les variables :
 ```bash
-git clone <repository-url>
-cd projet-devops
+DB_PASSWORD=votre_mot_de_passe
+JWT_SECRET=votre_secret_jwt
+GOOGLE_CLIENT_ID=votre_client_id
+GOOGLE_CLIENT_SECRET=votre_client_secret
+SONAR_DB_PASSWORD=votre_sonar_password
 ```
 
-2. Démarrer les services avec Docker Compose:
+2. Générer les secrets Kubernetes :
 ```bash
-docker-compose up -d
+# Sur Linux/Mac
+./scripts/generate_k8s_secrets.sh
+# Sur Windows
+.\scripts\generate_k8s_secrets.ps1
 ```
 
-3. Accéder aux services:
-- User Service: http://localhost:5000
-- Salle Service: http://localhost:5001
-- Reservation Service: http://localhost:5002
-- SonarQube: http://localhost:9000
+## Déploiement
 
-## Environment Setup
+### Avec kubectl
 
-1. Copy `.env.example` to `.env`:
+1. Assurez-vous que votre cluster Kubernetes est opérationnel
+2. Exécutez le script de déploiement :
 ```bash
-cp .env.example .env
+cd k8s
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-2. Configure your environment variables in `.env` with your actual values:
-   - Set up Google OAuth credentials from Google Cloud Console
-   - Generate a secure JWT secret
-   - Configure database passwords
-   - Base64 encode values for Kubernetes secrets
+### Avec Helm (alternative)
 
-3. Update the following environment variables in your `.env` file:
-- `DB_PASSWORD`: Database password for PostgreSQL services
-- `JWT_SECRET`: Secret key for JWT token generation
-- `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID
-- `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret
-- `SONAR_DB_PASSWORD`: Password for SonarQube database
-
-4. For Kubernetes deployment, you'll need to base64 encode these values:
 ```bash
-echo -n "your-secret-here" | base64
+cd helm
+helm dependency update
+helm install reservation-system .
 ```
 
-### Security Notes
-- Never commit the `.env` file to the repository
-- Keep your secrets secure and rotate them regularly
-- In production, use a secure secrets management service
-- For local development, the `.env` file is loaded automatically by docker-compose
+## Accès aux services
 
-⚠️ IMPORTANT: Never commit the `.env` file or any files containing real secrets to the repository.
+- API Gateway : http://localhost/api
+- Interface Jaeger : http://localhost:16686
+- SonarQube : http://localhost:9000
 
-## Déploiement Kubernetes
+## Monitoring
 
-1. Configuration de l'environnement:
-```bash
-kubectl create namespace salle-reservation
-kubectl config set-context --current --namespace=salle-reservation
-```
+Le projet inclut :
+- Elasticsearch pour le stockage des logs
+- Jaeger pour le traçage distribué
+- Prometheus et Grafana (via Helm) pour la supervision
 
-2. Déploiement avec Helm:
-```bash
-helm upgrade --install salle-reservation ./helm
-```
+## Services exposés
 
-## Pipeline CI/CD
-
-Le pipeline GitHub Actions comprend:
-1. Analyse SonarQube
-2. Tests unitaires
-3. Build des images Docker
-4. Push vers Docker Hub
-5. Déploiement Kubernetes avec Helm
-
-## Monitoring et Logs
-
-- Kafka pour la communication événementielle
-- Métriques exposées pour Grafana
-- Logs centralisés avec AWS CloudWatch
-
-## Sécurité
-
-- Authentication OAuth (Google)
-- JWT pour l'autorisation
-- RBAC pour le contrôle d'accès
-
-## Qualité du Code
-
-SonarQube est configuré pour analyser:
-- Couverture de tests
-- Code smells
-- Vulnérabilités
-- Dette technique
-
-## Variables d'Environnement Requises
-
-Pour GitHub Actions:
-```
-DOCKER_USERNAME=<dockerhub-username>
-DOCKER_PASSWORD=<dockerhub-password>
-KUBE_CONFIG=<base64-encoded-kubeconfig>
-SONAR_TOKEN=<sonarqube-token>
-SONAR_HOST_URL=<sonarqube-url>
-```
-
-Pour les services:
-```
-GOOGLE_CLIENT_ID=<google-oauth-client-id>
-GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
-JWT_SECRET=<jwt-secret-key>
-```
+- `/api/users` - Service utilisateurs
+- `/api/salles` - Service de gestion des salles
+- `/api/reservations` - Service de réservation

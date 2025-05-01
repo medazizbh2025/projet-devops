@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  user-service:
+    env_file:
+      - .env
+
+  salle-service:
+    env_file:
+      - .env
+
+  reservation-service:
+    env_file:
+      - .env
+
+  user-db:
+    env_file:
+      - .env
+
+  salle-db:
+    env_file:
+      - .env
+
+  reservation-db:
+    env_file:
+      - .env
+
+  sonarqube:
+    env_file:
+      - .env
+
+  sonarqube-db:
+    env_file:
+      - .env

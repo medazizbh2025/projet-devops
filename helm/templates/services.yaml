@@ -13,17 +13,17 @@ spec:
   type: ClusterIP
 {{- end -}}
 
+{{- if .Values.userService -}}
 ---
-{{- with .Values.userService }}
-{{- include "common.service" . | nindent 0 }}
+{{- include "common.service" .Values.userService | nindent 0 }}
 {{- end }}
 
+{{- if .Values.salleService -}}
 ---
-{{- with .Values.salleService }}
-{{- include "common.service" . | nindent 0 }}
+{{- include "common.service" .Values.salleService | nindent 0 }}
 {{- end }}
 
+{{- if .Values.reservationService -}}
 ---
-{{- with .Values.reservationService }}
-{{- include "common.service" . | nindent 0 }}
+{{- include "common.service" .Values.reservationService | nindent 0 }}
 {{- end }}

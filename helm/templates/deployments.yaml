@@ -5,6 +5,7 @@ metadata:
   name: {{ .name }}
   labels:
     app: {{ .name }}
+    app.kubernetes.io/managed-by: Helm
 spec:
   replicas: {{ .replicas }}
   selector:
@@ -17,59 +18,33 @@ spec:
     spec:
       containers:
       - name: {{ .name }}
-        image: {{ .image }}:{{ $.Values.imageTag }}
+        image: {{ .image }}:{{ $.Values.imageTag | default "latest" }}
         ports:
         - containerPort: {{ .port }}
         env:
         - name: NOTIFICATION_LEVEL
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-config
+              name: {{ $.Release.Name }}-config
               key: NOTIFICATION_LEVEL
-        - name: SONARQUBE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-config
-              key: SONARQUBE_URL
-        - name: SONARQUBE_WEBHOOK_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-config
-              key: SONARQUBE_WEBHOOK_URL
-        {{- if .Values.notifications.slack.enabled }}
-        - name: SLACK_WEBHOOK_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-config
-              key: SLACK_WEBHOOK_URL
-        {{- end }}
-        {{- if .Values.notifications.teams.enabled }}
-        - name: TEAMS_WEBHOOK_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-config
-              key: TEAMS_WEBHOOK_URL
-        {{- end }}
-        - name: SONARQUBE_WEBHOOK_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: sonarqube-webhook-secret
         resources:
-          {{- toYaml .resources | nindent 12 }}
-{{- end -}}
-
----
-{{- with .Values.userService }}
-{{- include "common.deployment" . | nindent 0 }}
+{{ toYaml .resources | indent 10 }}
 {{- end }}
 
+{{- if .Values.userService }}
 ---
-{{- with .Values.salleService }}
-{{- include "common.deployment" . | nindent 0 }}
+{{- $serviceValues := merge (dict "name" .Values.userService.name "replicas" .Values.userService.replicas "image" .Values.userService.image "port" .Values.userService.port "resources" .Values.userService.resources) (dict "Values" .Values "Release" .Release) }}
+{{- include "common.deployment" $serviceValues | nindent 0 }}
 {{- end }}
 
+{{- if .Values.salleService }}
 ---
-{{- with .Values.reservationService }}
-{{- include "common.deployment" . | nindent 0 }}
+{{- $serviceValues := merge (dict "name" .Values.salleService.name "replicas" .Values.salleService.replicas "image" .Values.salleService.image "port" .Values.salleService.port "resources" .Values.salleService.resources) (dict "Values" .Values "Release" .Release) }}
+{{- include "common.deployment" $serviceValues | nindent 0 }}
+{{- end }}
+
+{{- if .Values.reservationService }}
+---
+{{- $serviceValues := merge (dict "name" .Values.reservationService.name "replicas" .Values.reservationService.replicas "image" .Values.reservationService.image "port" .Values.reservationService.port "resources" .Values.reservationService.resources) (dict "Values" .Values "Release" .Release) }}
+{{- include "common.deployment" $serviceValues | nindent 0 }}
 {{- end }}

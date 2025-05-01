@@ -163,7 +163,7 @@ metadata:
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
+      scrape_interval: {{ .Values.monitoring.prometheus.scrapeInterval }}
     scrape_configs:
       - job_name: 'kubernetes-services'
         kubernetes_sd_configs:

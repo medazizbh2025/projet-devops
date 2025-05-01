@@ -59,6 +59,7 @@ spec:
       - name: sonarqube-logs
         persistentVolumeClaim:
           claimName: sonarqube-logs
+
 ---
 apiVersion: v1
 kind: Service
@@ -71,6 +72,7 @@ spec:
     targetPort: 9000
   selector:
     app: sonarqube
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -82,6 +84,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.sonarqube.persistence.data.size }}
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -93,6 +96,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.sonarqube.persistence.extensions.size }}
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -104,6 +108,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.sonarqube.persistence.logs.size }}
+
 ---
 apiVersion: v1
 kind: Secret
@@ -113,7 +118,8 @@ type: Opaque
 data:
   database-user: {{ .Values.sonarqube.database.user | b64enc }}
   database-password: {{ .Values.sonarqube.database.password | b64enc }}
-{{- if .Values.sonarqube.ingress.enabled }}
+
+{{- if and .Values.sonarqube.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

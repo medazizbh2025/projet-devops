@@ -1,12 +1,23 @@
 import os
 import requests
 from flask import current_app
+from opentelemetry import trace
+from .tracing import inject_trace_info, extract_trace_info
+from kafka import KafkaProducer, KafkaConsumer
+import json
 
 class NotificationHandler:
-    def __init__(self):
+    def __init__(self, kafka_bootstrap_servers=None):
         self.slack_webhook = os.getenv('SLACK_WEBHOOK_URL')
         self.teams_webhook = os.getenv('TEAMS_WEBHOOK_URL')
         self.notification_level = os.getenv('NOTIFICATION_LEVEL', 'ERROR')  # ERROR, WARNING, or ALL
+        self.kafka_bootstrap_servers = kafka_bootstrap_servers
+        if kafka_bootstrap_servers:
+            self.producer = KafkaProducer(
+                bootstrap_servers=kafka_bootstrap_servers,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            )
+        self.tracer = trace.get_tracer(__name__)
     
     def _should_notify(self, severity):
         if self.notification_level == 'ALL':
@@ -60,6 +71,9 @@ class NotificationHandler:
         
         if self.teams_webhook:
             self._send_teams_notification(message)
+        
+        if self.kafka_bootstrap_servers:
+            self.send_notification("quality_gate_notifications", message)
     
     def _send_slack_notification(self, message):
         """Send notification to Slack"""
@@ -147,3 +161,54 @@ class NotificationHandler:
             response.raise_for_status()
         except Exception as e:
             current_app.logger.error(f"Failed to send Teams notification: {str(e)}")
+    
+    def send_notification(self, topic, message):
+        with self.tracer.start_as_current_span("send_notification") as span:
+            # Create headers carrier for trace context
+            carrier = {}
+            inject_trace_info(carrier)
+            
+            # Convert carrier to Kafka-compatible headers
+            headers = [(k, str(v).encode('utf-8')) for k, v in carrier.items()]
+            
+            # Add trace info to message
+            message['trace_id'] = str(span.get_span_context().trace_id)
+            message['span_id'] = str(span.get_span_context().span_id)
+            
+            # Send message with trace context
+            self.producer.send(
+                topic,
+                value=message,
+                headers=headers
+            )
+            self.producer.flush()
+            
+            # Add message details to span
+            span.set_attribute("messaging.system", "kafka")
+            span.set_attribute("messaging.destination", topic)
+            span.set_attribute("messaging.message_id", message.get('id', ''))
+
+    def consume_notifications(self, topic, callback):
+        consumer = KafkaConsumer(
+            topic,
+            bootstrap_servers=self.kafka_bootstrap_servers,
+            value_deserializer=lambda v: json.loads(v.decode('utf-8'))
+        )
+        
+        for message in consumer:
+            # Extract trace context from headers
+            carrier = {k: v.decode('utf-8') for k, v in message.headers}
+            context = extract_trace_info(carrier)
+            
+            with self.tracer.start_as_current_span(
+                "process_notification",
+                context=context
+            ) as span:
+                # Add message details to span
+                span.set_attribute("messaging.system", "kafka")
+                span.set_attribute("messaging.operation", "process")
+                span.set_attribute("messaging.message_id", 
+                                 message.value.get('id', ''))
+                
+                # Process message
+                callback(message.value)

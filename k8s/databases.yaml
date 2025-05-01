@@ -1,167 +1,104 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: user-db-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: user-db
+  name: postgresql
 spec:
-  serviceName: user-db
+  serviceName: postgresql
   replicas: 1
   selector:
     matchLabels:
-      app: user-db
+      app: postgresql
   template:
     metadata:
       labels:
-        app: user-db
+        app: postgresql
     spec:
       containers:
-      - name: postgres
-        image: postgres:13
-        ports:
-        - containerPort: 5432
+      - name: user-db
+        image: postgres:13-alpine
         env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: postgres-password
         - name: POSTGRES_DB
           value: user-service
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          value: aziz123
         volumeMounts:
-        - name: user-db-storage
+        - name: user-data
           mountPath: /var/lib/postgresql/data
-      volumes:
-      - name: user-db-storage
-        persistentVolumeClaim:
-          claimName: user-db-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: user-db
-spec:
-  selector:
-    app: user-db
-  ports:
-  - port: 5432
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: salle-db-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: salle-db
-spec:
-  serviceName: salle-db
-  replicas: 1
-  selector:
-    matchLabels:
-      app: salle-db
-  template:
-    metadata:
-      labels:
-        app: salle-db
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:13
-        ports:
-        - containerPort: 5432
+      - name: salle-db
+        image: postgres:13-alpine
         env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: postgres-password
         - name: POSTGRES_DB
           value: salle-service
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          value: aziz123
         volumeMounts:
-        - name: salle-db-storage
+        - name: salle-data
           mountPath: /var/lib/postgresql/data
-      volumes:
-      - name: salle-db-storage
-        persistentVolumeClaim:
-          claimName: salle-db-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: salle-db
-spec:
-  selector:
-    app: salle-db
-  ports:
-  - port: 5432
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: reservation-db-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: reservation-db
-spec:
-  serviceName: reservation-db
-  replicas: 1
-  selector:
-    matchLabels:
-      app: reservation-db
-  template:
-    metadata:
-      labels:
-        app: reservation-db
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:13
-        ports:
-        - containerPort: 5432
+      - name: reservation-db
+        image: postgres:13-alpine
         env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: postgres-password
         - name: POSTGRES_DB
           value: reservation-service
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          value: aziz123
         volumeMounts:
-        - name: reservation-db-storage
+        - name: reservation-data
           mountPath: /var/lib/postgresql/data
-      volumes:
-      - name: reservation-db-storage
-        persistentVolumeClaim:
-          claimName: reservation-db-pvc
+  volumeClaimTemplates:
+  - metadata:
+      name: user-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  - metadata:
+      name: salle-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  - metadata:
+      name: reservation-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: reservation-db
+  name: postgresql
 spec:
   selector:
-    app: reservation-db
+    app: postgresql
   ports:
   - port: 5432
+    targetPort: 5432
+  clusterIP: None

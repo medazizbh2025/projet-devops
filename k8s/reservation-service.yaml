@@ -13,6 +13,9 @@ spec:
     metadata:
       labels:
         app: reservation-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5002"
     spec:
       containers:
       - name: reservation-service
@@ -27,7 +30,34 @@ spec:
               name: db-secrets
               key: reservation-db-url
         - name: KAFKA_BOOTSTRAP_SERVERS
-          value: "kafka:9092"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: JAEGER_AGENT_HOST
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5002
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
